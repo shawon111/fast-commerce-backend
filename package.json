@@ -4,6 +4,8 @@
   "description": "Advance backend script for a fully functional ecommerce website",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
+    "start-dev": "nodemon index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
