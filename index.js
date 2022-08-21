@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 app.use(cors());
 app.use(express.json());
-app.use('/tmp', express.static('tmp'));
+app.use('/uploads', express.static('uploads'));
 require('dotenv').config();
 const {MongoClient} = require('mongodb');
 const ObjectId = require("mongodb").ObjectId;
@@ -17,7 +17,7 @@ app.get('/', (req, res) =>{
 
 
 // file upload folder
-const uploads_folder = './tmp/';
+const uploads_folder = './uploads/';
 
 // define storage
 const storage = multer.diskStorage({
