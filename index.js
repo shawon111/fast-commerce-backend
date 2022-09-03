@@ -7,12 +7,12 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 require('dotenv').config();
-const {MongoClient} = require('mongodb');
+const { MongoClient } = require('mongodb');
 const ObjectId = require("mongodb").ObjectId;
 const port = process.env.PORT || 5000;
 
-app.get('/', (req, res) =>{
-    res.send("fast commerce server")
+app.get('/', (req, res) => {
+  res.send("fast commerce server")
 })
 
 
@@ -21,10 +21,10 @@ const uploads_folder = './uploads/';
 
 // define storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb)=>{
+  destination: (req, file, cb) => {
     cb(null, uploads_folder)
   },
-  filename: (req, file, cb)=>{
+  filename: (req, file, cb) => {
     const fileExt = path.extname(file.originalname);
     const fileName = file.originalname.replace(fileExt, "").toLowerCase().split(" ").join("-") + "-" + Date.now();
     const fullName = fileName + fileExt;
@@ -38,15 +38,15 @@ const upload = multer({
   limits: {
     fileSize: 3000000,
   },
-  fileFilter: (req, file, cb) =>{
-    if(
+  fileFilter: (req, file, cb) => {
+    if (
       file.mimetype === "image/webp" ||
       file.mimetype === "image/png" ||
       file.mimetype === "image/jpg" ||
       file.mimetype === "image/jpeg"
-    ){
+    ) {
       cb(null, true)
-    }else{
+    } else {
       cb(new Error("Only webp, png, jpg and jpeg images are allowed"), false)
     }
   }
@@ -64,21 +64,21 @@ async function run() {
 
 
     // post api for adding product
-    app.post('/addproduct', upload.fields([{ name: 'featuredImage', maxCount: 1 }, {name: 'gallaryImages', maxCount: 4}]), async (req, res)=>{
+    app.post('/addproduct', upload.fields([{ name: 'featuredImage', maxCount: 1 }, { name: 'gallaryImages', maxCount: 4 }]), async (req, res) => {
       const images = req.files;
       const featuredImageFile = images['featuredImage'][0];
       const featuredImagePath = featuredImageFile.path.replace("\\", "/");
 
       const galleryFiles = images['gallaryImages']
       let galleryImagesPathList = [];
-      for(let i=0; i<galleryFiles.length; i++){
+      for (let i = 0; i < galleryFiles.length; i++) {
         const filePath = await galleryFiles[i].path.replace("\\", "/");
         galleryImagesPathList.push(filePath);
       }
 
       const productInfo = req.body;
 
-      const {product_name, product_desc, additionalInfo, sizes, sku, features, brand, stock, availableStock, metaTags, metaDescription, metaTitle, price, category} = productInfo;
+      const { product_name, product_desc, additionalInfo, sizes, sku, features, brand, stock, availableStock, metaTags, metaDescription, metaTitle, price, category } = productInfo;
 
       const productSizes = sizes.split(",");
 
@@ -88,7 +88,7 @@ async function run() {
         desc: product_desc,
         additionalInfo: additionalInfo,
         reviews: [
-            
+
         ],
         product_sizes: {
           small: productSizes[0],
@@ -112,20 +112,58 @@ async function run() {
       // inserting data to the database
       const result = await productCollection.insertOne(product)
 
-      
+
       res.json(result)
     })
 
+    // get api for finding all products
+    app.get('/products', async (req, res) => {
+      const cursor = productCollection.find({});
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
 
-    app.use((err, req, res, next)=>{
-      if(err){
+    // get api for a specific category
+    app.get('/products/watch', async (req, res) => {
+      const query = { category: "watch" };
+      const cursor = productCollection.find(query);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
+    // get latest 8 product
+    app.get('/products/latest', async (req, res)=> {
+      const options = {
+        sort: {_id: -1}
+      }
+      const cursor =productCollection.find({}, options).limit(8);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
+
+
+    app.use((err, req, res, next) => {
+      if (err) {
         res.status(500).send(err.message)
-      }else{
+      } else {
         res.send("success")
       }
     })
 
-    
+
   } finally {
     console.log("server operation complete")
   }
@@ -133,6 +171,6 @@ async function run() {
 run().catch(console.dir);
 
 
-app.listen(port, ()=>{
-    console.log(`listening to the port:  ${port}`)
+app.listen(port, () => {
+  console.log(`listening to the port:  ${port}`)
 })
