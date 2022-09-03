@@ -78,7 +78,7 @@ async function run() {
 
       const productInfo = req.body;
 
-      const {product_name, product_desc, additionalInfo, sizes, sku, features, brand, stock, availableStock, metaTags, metaDescription, metaTitle, price, } = productInfo;
+      const {product_name, product_desc, additionalInfo, sizes, sku, features, brand, stock, availableStock, metaTags, metaDescription, metaTitle, price, category} = productInfo;
 
       const productSizes = sizes.split(",");
 
@@ -105,7 +105,8 @@ async function run() {
         metaTitle: metaTitle,
         featuredImageUrl: featuredImagePath,
         galleryImagesUrls: galleryImagesPathList,
-        price: price
+        price: price,
+        category: category
       }
 
       // inserting data to the database
