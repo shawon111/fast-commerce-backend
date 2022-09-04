@@ -165,7 +165,18 @@ async function run() {
       }
     })
 
-
+    // get api for single product
+    app.get('/products/:id', async (req, res)=>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const cursor = productCollection.findOne(query);
+      const result = await cursor;
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
 
     app.use((err, req, res, next) => {
       if (err) {
