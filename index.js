@@ -128,9 +128,10 @@ async function run() {
     })
 
     // get api for a specific category
-    app.get('/products/watch', async (req, res) => {
-      const query = { category: "watch" };
-      const cursor = productCollection.find(query);
+    app.get('/products/category/:categoryName', async (req, res) => {
+      const requestedCategory = req.params.categoryName;
+      const query = { category: requestedCategory };
+      const cursor = productCollection.find(query).limit(8);
       const result = await cursor.toArray();
       if ((result.length) === 0) {
         res.json("No documents found!")
@@ -145,6 +146,17 @@ async function run() {
         sort: {_id: -1}
       }
       const cursor =productCollection.find({}, options).limit(8);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
+    // get api for featured products
+    app.get('/products/featured', async (req, res)=>{
+      const cursor = productCollection.find({}).limit(10);
       const result = await cursor.toArray();
       if ((result.length) === 0) {
         res.json("No documents found!")
