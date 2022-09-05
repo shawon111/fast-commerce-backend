@@ -127,6 +127,27 @@ async function run() {
       }
     })
 
+    // get product according to pagination
+    app.get('/products/page', async (req, res)=>{
+      const page = req.query.index;
+      let skipProduct = (page - 1) * 12;
+      const cursor = productCollection.find({}).limit(12).skip(skipProduct);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
+    // get api for product length
+    app.get('/products/length', async (req, res)=>{
+      const cursor = productCollection.find({});
+      const result = await cursor.toArray();
+      const countResult = result.length;
+      res.json(countResult)
+    })
+
     // get api for a specific category
     app.get('/products/category/:categoryName', async (req, res) => {
       const requestedCategory = req.params.categoryName;
