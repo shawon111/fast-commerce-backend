@@ -186,6 +186,26 @@ async function run() {
       }
     })
 
+    // get api for search
+    app.get('/products/search', async (req,res)=>{
+      const searchText = req.query.text;
+      const query = {$text:{$search:`${searchText}`}};
+      const projection = {
+        _id: 1,
+        name: 1,
+        featuredImageUrl: 1,
+        price: 1,
+        reviews: 1
+      };
+      const cursor = productCollection.find(query).project(projection);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
     // get api for single product
     app.get('/products/:id', async (req, res)=>{
       const id = req.params.id;
