@@ -178,6 +178,19 @@ async function run() {
       }
     })
 
+    //get api for related product
+    app.get('/products/related/:category', async (req, res)=>{
+      const requestedCategory = req.params.category;
+      const query = {category: requestedCategory};
+      const cursor = productCollection.find(query).limit(2);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
     app.use((err, req, res, next) => {
       if (err) {
         res.status(500).send(err.message)
