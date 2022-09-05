@@ -232,6 +232,38 @@ async function run() {
       }
     })
 
+    // atlas search
+    app.get('/all/search', async (req,res)=>{
+      const searchText = req.query.text;
+      const agg = [
+        {
+          $search: {
+            index: "searchProducts",
+            text: {
+              query: searchText,
+              path: {
+                'wildcard': '*'
+              },
+            },
+          },
+        },
+      ];
+      const projection = {
+        _id: 1,
+        name: 1,
+        featuredImageUrl: 1,
+        price: 1,
+        reviews: 1
+      };
+      const cursor = productCollection.aggregate(agg).project(projection);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
     app.use((err, req, res, next) => {
       if (err) {
         res.status(500).send(err.message)
