@@ -8,6 +8,7 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 require('dotenv').config();
 const { MongoClient } = require('mongodb');
+const { info } = require('console');
 const ObjectId = require("mongodb").ObjectId;
 const port = process.env.PORT || 5000;
 
@@ -128,7 +129,7 @@ async function run() {
     })
 
     // get product according to pagination
-    app.get('/products/page', async (req, res)=>{
+    app.get('/products/page', async (req, res) => {
       const page = req.query.index;
       let skipProduct = (page - 1) * 12;
       const cursor = productCollection.find({}).limit(12).skip(skipProduct);
@@ -141,7 +142,7 @@ async function run() {
     })
 
     // get api for product length
-    app.get('/products/length', async (req, res)=>{
+    app.get('/products/length', async (req, res) => {
       const cursor = productCollection.find({});
       const result = await cursor.toArray();
       const countResult = result.length;
@@ -162,11 +163,11 @@ async function run() {
     })
 
     // get latest 8 product
-    app.get('/products/latest', async (req, res)=> {
+    app.get('/products/latest', async (req, res) => {
       const options = {
-        sort: {_id: -1}
+        sort: { _id: -1 }
       }
-      const cursor =productCollection.find({}, options).limit(8);
+      const cursor = productCollection.find({}, options).limit(8);
       const result = await cursor.toArray();
       if ((result.length) === 0) {
         res.json("No documents found!")
@@ -176,7 +177,7 @@ async function run() {
     })
 
     // get api for featured products
-    app.get('/products/featured', async (req, res)=>{
+    app.get('/products/featured', async (req, res) => {
       const cursor = productCollection.find({}).limit(10);
       const result = await cursor.toArray();
       if ((result.length) === 0) {
@@ -187,9 +188,9 @@ async function run() {
     })
 
     // get api for search
-    app.get('/products/search', async (req,res)=>{
+    app.get('/products/search', async (req, res) => {
       const searchText = req.query.text;
-      const query = {$text:{$search:`${searchText}`}};
+      const query = { $text: { $search: `${searchText}` } };
       const projection = {
         _id: 1,
         name: 1,
@@ -207,9 +208,9 @@ async function run() {
     })
 
     // get api for single product
-    app.get('/products/:id', async (req, res)=>{
+    app.get('/products/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: ObjectId(id)};
+      const query = { _id: ObjectId(id) };
       const cursor = productCollection.findOne(query);
       const result = await cursor;
       if ((result.length) === 0) {
@@ -220,9 +221,9 @@ async function run() {
     })
 
     //get api for related product
-    app.get('/products/related/:category', async (req, res)=>{
+    app.get('/products/related/:category', async (req, res) => {
       const requestedCategory = req.params.category;
-      const query = {category: requestedCategory};
+      const query = { category: requestedCategory };
       const cursor = productCollection.find(query).limit(2);
       const result = await cursor.toArray();
       if ((result.length) === 0) {
@@ -233,7 +234,7 @@ async function run() {
     })
 
     // atlas search
-    app.get('/all/search', async (req,res)=>{
+    app.get('/all/search', async (req, res) => {
       const searchText = req.query.text;
       const agg = [
         {
@@ -256,6 +257,30 @@ async function run() {
         reviews: 1
       };
       const cursor = productCollection.aggregate(agg).project(projection);
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
+    // get request for cart items information
+    app.get('/cart-items', async (req, res) => {
+      const items = req.query.products;
+      const items_ids = items.split(",");
+      let newItems_ids = [];
+      items_ids.map(item => {
+        newItems_ids.push(ObjectId(item))
+      })
+      const projection = {
+        _id: 1,
+        name: 1,
+        featuredImageUrl: 1,
+        price: 1
+      };
+      const query = { _id: { $in: newItems_ids } };
+      const cursor = productCollection.find(query).project(projection);
       const result = await cursor.toArray();
       if ((result.length) === 0) {
         res.json("No documents found!")
