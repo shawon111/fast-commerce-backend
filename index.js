@@ -3,6 +3,7 @@ const cors = require('cors');
 const app = express();
 const multer = require('multer');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
@@ -15,6 +16,9 @@ const port = process.env.PORT || 5000;
 app.get('/', (req, res) => {
   res.send("fast commerce server")
 })
+
+// authentication
+
 
 
 // file upload folder
@@ -62,6 +66,7 @@ async function run() {
     await client.connect();
     const database = client.db('FastCommerce');
     const productCollection = database.collection('products');
+    const customersCollection = database.collection('customers');
 
 
     // post api for adding product
@@ -153,7 +158,7 @@ async function run() {
     app.get('/products/category/:categoryName', async (req, res) => {
       const requestedCategory = req.params.categoryName;
       const query = { category: requestedCategory };
-      const cursor = productCollection.find(query).limit(8);
+      const cursor = productCollection.find(query);
       const result = await cursor.toArray();
       if ((result.length) === 0) {
         res.json("No documents found!")
@@ -287,6 +292,42 @@ async function run() {
       } else {
         res.json(result)
       }
+    })
+
+    // get api for customer login
+    app.get('/login', async (req, res)=> {
+      const data = req.query;
+      const query = {email: data.email};
+      const cursor = customersCollection.findOne(query)
+      const result = await cursor;
+       if(result?.email === data.email && result?.password === data.pass){
+        res.json({
+          user: true,
+          loginStatus: true,
+          customerID: result._id
+        })
+      }
+      else{
+        res.json({
+          user: false,
+          loginStatus: false,
+        })
+      }
+    }) 
+
+    // get api for customer registration
+    app.post('/register', async (req, res)=> {
+      // customersCollection
+      const customerData = req.body;
+      const result = await customersCollection.insertOne(customerData);
+      res.json(result)
+    })
+
+    // get api for admin login
+    app.get('/authenticate-admin', async (req, res)=>{
+      const user = {name: "shawon"}
+      const accesstoken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
+      res.json({token: accesstoken})
     })
 
     app.use((err, req, res, next) => {
