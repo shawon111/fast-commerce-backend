@@ -18,7 +18,29 @@ app.get('/', (req, res) => {
 })
 
 // authentication
-
+const verifyJWT = (req, res, next) => {
+  const accesstoken = req.headers["x-access-token"];
+  if (!accesstoken) {
+    res.json({
+      auth: false,
+      access: false,
+      errMessage: "access token is missing"
+    })
+  } else {
+    jwt.verify(accesstoken, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        res.json({
+          auth: false,
+          access: false,
+          errMessage: "access is token expired or wrong"
+        })
+      }else{
+        req.userId = decoded.id;
+        next()
+      }
+    })
+  }
+}
 
 
 // file upload folder
@@ -56,7 +78,6 @@ const upload = multer({
     }
   }
 })
-
 
 // mongodb connection
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.gv57l.mongodb.net/?retryWrites=true&w=majority`
@@ -295,28 +316,31 @@ async function run() {
     })
 
     // get api for customer login
-    app.get('/login', async (req, res)=> {
+    app.get('/login', async (req, res) => {
       const data = req.query;
-      const query = {email: data.email};
+      const query = { email: data.email };
       const cursor = customersCollection.findOne(query)
       const result = await cursor;
-       if(result?.email === data.email && result?.password === data.pass){
+      if (result?.email === data.email && result?.password === data.pass) {
+        const id = result._id;
+        const accesstoken = jwt.sign({id}, process.env.ACCESS_TOKEN_SECRET, {});
         res.json({
           user: true,
           loginStatus: true,
-          customerID: result._id
+          customerID: result._id,
+          token: accesstoken
         })
       }
-      else{
+      else {
         res.json({
           user: false,
           loginStatus: false,
         })
       }
-    }) 
+    })
 
     // get api for customer registration
-    app.post('/register', async (req, res)=> {
+    app.post('/register', async (req, res) => {
       // customersCollection
       const customerData = req.body;
       const result = await customersCollection.insertOne(customerData);
@@ -324,10 +348,10 @@ async function run() {
     })
 
     // get api for admin login
-    app.get('/authenticate-admin', async (req, res)=>{
-      const user = {name: "shawon"}
+    app.get('/authenticate-admin', async (req, res) => {
+      const user = { name: "shawon" }
       const accesstoken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
-      res.json({token: accesstoken})
+      res.json({ token: accesstoken })
     })
 
     app.use((err, req, res, next) => {
