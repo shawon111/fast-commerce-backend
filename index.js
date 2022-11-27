@@ -317,11 +317,11 @@ async function run() {
 
     // get api for customer login
     app.get('/login', async (req, res) => {
-      const data = req.query;
+      const data = req.headers;
       const query = { email: data.email };
       const cursor = customersCollection.findOne(query)
       const result = await cursor;
-      if (result?.email === data.email && result?.password === data.pass) {
+      if (result?.email === data.email && result?.password === data.password) {
         const id = result._id;
         const accesstoken = jwt.sign({id}, process.env.ACCESS_TOKEN_SECRET, {});
         res.json({
