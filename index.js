@@ -34,7 +34,7 @@ const verifyJWT = (req, res, next) => {
           access: false,
           errMessage: "access is token expired or wrong"
         })
-      }else{
+      } else {
         req.userId = decoded.id;
         next()
       }
@@ -323,7 +323,7 @@ async function run() {
       const result = await cursor;
       if (result?.email === data.email && result?.password === data.password) {
         const id = result._id;
-        const accesstoken = jwt.sign({id}, process.env.ACCESS_TOKEN_SECRET, {});
+        const accesstoken = jwt.sign({ id }, process.env.ACCESS_TOKEN_SECRET, {});
         res.json({
           user: true,
           loginStatus: true,
@@ -343,8 +343,87 @@ async function run() {
     app.post('/register', async (req, res) => {
       // customersCollection
       const customerData = req.body;
-      const result = await customersCollection.insertOne(customerData);
-      res.json(result)
+      const aggEmail = [
+        {
+          $search: {
+            index: "seacrhCustomers",
+            text: {
+              query: customerData.email,
+              path: {
+                'wildcard': '*'
+              },
+            },
+          },
+        },
+        {
+          "$match": {
+            "email": customerData.email,
+          }
+        },
+      ];
+
+      const projection = {
+        _id: 1,
+        email: 1,
+        userName: 1
+      };
+
+      const cursorEmail = customersCollection.aggregate(aggEmail).project(projection);
+      const isEmailAvailable = await cursorEmail.toArray();
+
+      const aggUserName = [
+        {
+          $search: {
+            index: "seacrhCustomers",
+            text: {
+              query: customerData.userName,
+              path: {
+                'wildcard': '*'
+              },
+            },
+          },
+        },
+        {
+          "$match": {
+            "userName": customerData.userName,
+          }
+        },
+      ];
+
+      const cursorUserName = customersCollection.aggregate(aggUserName).project(projection);
+
+      const isUserNameAvailable = await cursorUserName.toArray();
+
+      // console.log("mail", isEmailAvailable, "user", isUserNameAvailable, "data", customerData)
+      if (isEmailAvailable.length >= 1 && isUserNameAvailable.length === 0) {
+        res.json({
+          emailAlreadyUsed: true,
+          userNameAlreadyUsed: false,
+          err: 'email'
+        })
+      }
+      else if (isEmailAvailable.length === 0 && isUserNameAvailable.length >= 1) {
+        res.json({
+          emailAlreadyUsed: false,
+          userNameAlreadyUsed: true,
+          err: 'userName'
+        })
+      }
+      else if (isEmailAvailable.length >= 1 && isUserNameAvailable.length >= 1) {
+        res.json({
+          emailAlreadyUsed: true,
+          userNameAlreadyUsed: true,
+          err: 'both'
+        })
+      }
+      else if (isEmailAvailable.length === 0 && isUserNameAvailable.length === 0) {
+        const result = await customersCollection.insertOne(customerData);
+        res.json(result)
+      }else{
+        res.json({
+          err:'unknown'
+        })
+      }
     })
 
     // get api for admin login
