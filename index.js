@@ -444,6 +444,30 @@ async function run() {
       }
     })
 
+    // get api for single customer information
+    app.get('/customers/:id', async (req, res)=>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const cursor = customersCollection.findOne(query);
+      const result = await cursor;
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
+    // delete api to delete a customer
+    app.delete('/customer/:id', async (req, res)=>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await customersCollection.deleteOne(query);
+      if ((result.length) === 0) {
+        res.json("Failed to delete!")
+      } else {
+        res.json(result)
+      }
+    })
 
     app.use((err, req, res, next) => {
       if (err) {
