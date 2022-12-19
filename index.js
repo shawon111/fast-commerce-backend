@@ -419,9 +419,9 @@ async function run() {
       else if (isEmailAvailable.length === 0 && isUserNameAvailable.length === 0) {
         const result = await customersCollection.insertOne(customerData);
         res.json(result)
-      }else{
+      } else {
         res.json({
-          err:'unknown'
+          err: 'unknown'
         })
       }
     })
@@ -432,6 +432,18 @@ async function run() {
       const accesstoken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
       res.json({ token: accesstoken })
     })
+
+    // get api for customers list
+    app.get('/customers', async (req, res) => {
+      const cursor = customersCollection.find({});
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
 
     app.use((err, req, res, next) => {
       if (err) {
