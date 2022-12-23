@@ -271,6 +271,14 @@ async function run() {
       res.json(result)
     })
 
+    // delete api to delete a product
+    app.delete('/product/:id', async (req, res)=>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const result = await productCollection.deleteOne(query);
+      res.json(result)
+    })
+
     //get api for related product
     app.get('/products/related/:category', async (req, res) => {
       const requestedCategory = req.params.category;
