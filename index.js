@@ -12,7 +12,6 @@ const { MongoClient } = require('mongodb');
 const { info } = require('console');
 const ObjectId = require("mongodb").ObjectId;
 const port = process.env.PORT || 5000;
-
 app.get('/', (req, res) => {
   res.send("fast commerce server")
 })
@@ -246,6 +245,32 @@ async function run() {
       }
     })
 
+    // put api to update product
+    app.put('/product/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = req.body;
+      const { product_name, product_desc, additionalInfo, sku, features, brand, stock, metaTags, metaDescription, metaTitle, price, category } = updatedData;
+      const filter = {_id: ObjectId(id)}
+      const updateDoc = {
+        $set: {
+          name: product_name,
+          desc: product_desc,
+          additionalInfo: additionalInfo,
+          sku: sku,
+          features: features,
+          brand: brand,
+          stock: stock,
+          metaTags: metaTags,
+          metaDescription: metaDescription,
+          metaTitle: metaTitle,
+          price: price,
+          category: category
+        }
+      }
+      const result = await productCollection.updateOne(filter, updateDoc)
+      res.json(result)
+    })
+
     //get api for related product
     app.get('/products/related/:category', async (req, res) => {
       const requestedCategory = req.params.category;
@@ -445,9 +470,9 @@ async function run() {
     })
 
     // get api for single customer information
-    app.get('/customers/:id', async (req, res)=>{
+    app.get('/customers/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: ObjectId(id)};
+      const query = { _id: ObjectId(id) };
       const cursor = customersCollection.findOne(query);
       const result = await cursor;
       if ((result.length) === 0) {
@@ -458,9 +483,9 @@ async function run() {
     })
 
     // delete api to delete a customer
-    app.delete('/customer/:id', async (req, res)=>{
+    app.delete('/customer/:id', async (req, res) => {
       const id = req.params.id;
-      const query = {_id: ObjectId(id)};
+      const query = { _id: ObjectId(id) };
       const result = await customersCollection.deleteOne(query);
       if ((result.length) === 0) {
         res.json("Failed to delete!")
