@@ -87,6 +87,7 @@ async function run() {
     const database = client.db('FastCommerce');
     const productCollection = database.collection('products');
     const customersCollection = database.collection('customers');
+    const usersCollection = database.collection('users');
 
 
     // post api for adding product
@@ -466,6 +467,115 @@ async function run() {
       res.json({ token: accesstoken })
     })
 
+    // get api for users list
+    app.get('/users', async (req, res)=>{
+      const cursor = usersCollection.find({});
+      const result = await cursor.toArray();
+      if ((result.length) === 0) {
+        res.json("No documents found!")
+      } else {
+        res.json(result)
+      }
+    })
+
+    // delete api to delete a user
+    app.delete('/user/:id', async (req, res)=>{
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersCollection.deleteOne(query);
+      if ((result.length) === 0) {
+        res.json("Failed to delete!")
+      } else {
+        res.json(result)
+      }
+    })
+
+    // register new user
+    app.post('/users', async (req, res) => {
+      const userData = req.body;
+      const aggEmail = [
+        {
+          $search: {
+            index: "usersSearchIndex",
+            text: {
+              query: userData.email,
+              path: {
+                'wildcard': '*'
+              },
+            },
+          },
+        },
+        {
+          "$match": {
+            "email": userData.email,
+          }
+        },
+      ];
+
+      const projection = {
+        _id: 1,
+        email: 1,
+        userName: 1
+      };
+
+      const cursorEmail = usersCollection.aggregate(aggEmail).project(projection);
+      const isEmailAvailable = await cursorEmail.toArray();
+
+      const aggUserName = [
+        {
+          $search: {
+            index: "usersSearchIndex",
+            text: {
+              query: userData.user_name,
+              path: {
+                'wildcard': '*'
+              },
+            },
+          },
+        },
+        {
+          "$match": {
+            "userName": userData.user_name,
+          }
+        },
+      ];
+
+      const cursorUserName = usersCollection.aggregate(aggUserName).project(projection);
+
+      const isUserNameAvailable = await cursorUserName.toArray();
+
+      // console.log("mail", isEmailAvailable, "user", isUserNameAvailable, "data", customerData)
+      if (isEmailAvailable.length >= 1 && isUserNameAvailable.length === 0) {
+        res.json({
+          emailAlreadyUsed: true,
+          userNameAlreadyUsed: false,
+          err: 'email'
+        })
+      }
+      else if (isEmailAvailable.length === 0 && isUserNameAvailable.length >= 1) {
+        res.json({
+          emailAlreadyUsed: false,
+          userNameAlreadyUsed: true,
+          err: 'userName'
+        })
+      }
+      else if (isEmailAvailable.length >= 1 && isUserNameAvailable.length >= 1) {
+        res.json({
+          emailAlreadyUsed: true,
+          userNameAlreadyUsed: true,
+          err: 'both'
+        })
+      }
+      else if (isEmailAvailable.length === 0 && isUserNameAvailable.length === 0) {
+        const result = await usersCollection.insertOne(userData);
+        res.json(result)
+      } else {
+        res.json({
+          err: 'unknown'
+        })
+      }
+    })
+
     // get api for customers list
     app.get('/customers', async (req, res) => {
       const cursor = customersCollection.find({});
@@ -474,6 +584,17 @@ async function run() {
         res.json("No documents found!")
       } else {
         res.json(result)
+      }
+    })
+    // get api for customers list
+    app.get('/customers/length', async (req, res) => {
+      const cursor = customersCollection.find({});
+      const result = await cursor.toArray();
+      const countCustomer = result.length;
+      if ((result.length) === 0) {
+        res.json("0")
+      } else {
+        res.json(countCustomer)
       }
     })
 
